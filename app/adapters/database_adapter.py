@@ -35,8 +35,8 @@ class DatabaseAdapter:
     def get_service_by_id(self, service_id: str) -> MonitoredService:
         try:
             return self.services[service_id]
-        except Exception:
-            raise NoResultsFoundException
+        except KeyError:
+            raise NoResultsFoundException('Not found')
 
     def update_service(self, service: MonitoredService) -> None:
         self.services[service.service_id] = service
@@ -51,4 +51,4 @@ class DatabaseAdapter:
         try:
             return self.alerts[alert_id]
         except Exception:
-            raise NoResultsFoundException
+            raise NoResultsFoundException('Not found')
