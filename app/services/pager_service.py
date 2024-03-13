@@ -15,16 +15,19 @@ class PagerService:
     def __init__(
             self,
             database_adapter: Optional[DatabaseAdapter] = DATABASE,
-            notification_service: Optional[NotificationService] = NotificationService(DATABASE),
+            notification_service: Optional[NotificationService] = None,
             timer_adapter: Optional[TimerAdapter] = TimerAdapter(),
             escalation_policy_adapter: Optional[EscalationPolicyAdapter] = EscalationPolicyAdapter()
     ):
         self.database_adapter = database_adapter
-        self.notification_service = notification_service
+        if not notification_service:
+            self.notification_service = NotificationService(database_adapter)
+        else:
+            self.notification_service = notification_service
         self.timer_adapter = timer_adapter
         self.escalation_policy_adapter = escalation_policy_adapter
 
-    def raise_alert(self, service_id: str, message: str) -> None:
+    def raise_alert(self, service_id: str, message: str) -> Optional[str]:
         """
         Method called when a service detects an anomaly and raises an alert
         :param service_id: Service identifier
@@ -37,12 +40,17 @@ class PagerService:
             raise e
 
         if not service.is_healthy():
-            return
+            return None
 
         service.mark_as_unhealthy()
         self.database_adapter.update_service(service)
+        print(f'Service {service.name} marked as unhealthy')
 
-        escalation_policy = self.escalation_policy_adapter.get(service.escalation_policy_id)
+        try:
+            escalation_policy = self.escalation_policy_adapter.get(service.escalation_policy_id)
+        except Exception as e:
+            print(f"Error getting escalation policy {service.escalation_policy_id} for service {service_id}")
+            raise e
 
         alert = Alert(
             alert_id=service.service_id + '-' + str(uuid.uuid4()),
@@ -51,9 +59,12 @@ class PagerService:
             message=message
         )
         self.database_adapter.insert_alert(alert)
+        print(f'Alert {alert.alert_id} raised')
 
         self.notification_service.notify(escalation_policy, alert)
         self.timer_adapter.send_task(alert.alert_id)
+
+        return alert.alert_id
 
     def acknowledge_alert(self, alert_id: str) -> None:
         """
@@ -65,6 +76,9 @@ class PagerService:
         except NoResultsFoundException as e:
             print(f"Alert with id {alert_id} not found")
             raise e
+
+        if alert.acknowledged:
+            return
 
         alert.acknowledge()
         self.database_adapter.insert_alert(alert)
@@ -80,12 +94,18 @@ class PagerService:
             print(f"Alert with id {alert_id} not found")
             raise e
 
+        if alert.resolved:
+            return
+
         try:
             service = self.database_adapter.get_service_by_id(alert.service_id)
         except NoResultsFoundException as e:
+            # This should never happen, but just in case
             print(f"Service with id {alert.service_id} not found")
             raise e
 
+        if not alert.acknowledged:
+            alert.acknowledge()
         alert.resolve()
         self.database_adapter.insert_alert(alert)
 
