@@ -27,12 +27,12 @@ You can also jus run a subset of the tests by changing the `tests` folder to, fo
 
 ### Core Domain Model
 You can find each one of these models in the `models`  directory
-- MonitoredService: Represents a monitored system component. Tracks its current status (Healthy/Unhealthy) and references an escalation policy that should be recovered from the EP service.
-- EscalationPolicy: Defines the escalation policy. It's main component being an ordered sequence of Levels.
-- Level: A step in the escalation, containing a list of Targets.
-- Target: Individual or service to notify (email or SMS).
-- Alert: A signal associated with a MonitoredService indicating a problem.
-- Notification: Represents a single notification sent to a Level.
+- `MonitoredService`: Represents a monitored system component. Tracks its current status (Healthy/Unhealthy) and references an escalation policy that should be recovered from the EP service.
+- `EscalationPolicy`: Defines the escalation policy. It's main component being an ordered sequence of Levels.
+- `Level`: A step in the escalation, containing a list of Targets.
+- `Target`: Individual or service to notify (email or SMS).
+- `Alert`: A signal associated with a MonitoredService indicating a problem.
+- `Notification`: Represents a single notification sent to a Level.
 
 ### Key Logic
 The key logic described below is contained in the `services` directory. Mostly in the `PagerService` class but also in the `NotificationService` class.
