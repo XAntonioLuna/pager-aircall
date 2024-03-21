@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from enum import Enum
-from app.models.escalation_policy import EscalationPolicy
 
 
 class MonitoredServiceState(Enum):
